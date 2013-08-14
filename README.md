@@ -2,29 +2,29 @@
 Black Kite
 =========
 
-Upload an image to imgur from various sites to your twitter account every 33 minutes
+Upload an image to imgur from various sites to your twitter account every 33 minutes using NodeJS
 
 Installing
 -------------
 
- * You can just download the files and put it in your project.
- * Set your Imgur Client ID and Twitter credentials
- * npm install
- * node app
+* You can just download the files and put it in your project.
+* Set your Imgur Client ID and Twitter credentials
+* '''npm install'''
+* '''node app'''
 
 
- Work in Progress
- -----------
+Work in Progress
+-----------
 
- * Konachan website only
+* [Konachan.com](http://konachan.com/help/api) website is supported
 
- Why?
- -----------
+Why?
+-----------
 
- For fun and Great Justice
+For fun and Great Justice
 
- LICENSE
- ----------
+LICENSE
+----------
 
 The MIT License (MIT)
 
