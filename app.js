@@ -35,11 +35,17 @@ var uploadFile = function (file_link) {
 var updateStat = function (img_link) {
 	twit.updateStatus(img_link,
     function (err, data) {
-      console.log('Uploaded file '+img_link);
+      console.log(timeStamp()+': '+'Uploaded file '+img_link);
     }
   );
 }
 
+var timeStamp = function () {
+	date = new Date();
+	time = date.getHours()+':'+ date.getMinutes()+':'+date.getSeconds();
+	return time;
+}
 
-setInterval(function() {KonaChan();}, 2000000);
-console.log('Starting upload in 33 minutes');
+
+setInterval(function() {konaChan();}, 600000);
+console.log(timeStamp()+' : '+'Starting upload in 10 minutes');
