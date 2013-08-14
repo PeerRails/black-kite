@@ -1,0 +1,14 @@
+{
+  "name": "black-kite",
+  "version": "0.1.1",
+  "description": "Upload an image to imgur from various sites to your twitter account every 33 minutes",
+  "private": false,
+  "scripts": {
+    "start": "node web"
+  },
+  "dependencies": {
+    "ntwitter": "*",
+    "request": "*",
+    "imgur-node-api": "*"
+  }
+}
