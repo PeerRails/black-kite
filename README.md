@@ -9,8 +9,8 @@ Installing
 
 * You can just download the files and put it in your project.
 * Set your Imgur Client ID and Twitter credentials
-* '''npm install'''
-* '''node app'''
+* 'npm install'
+* 'node app'
 
 
 Work in Progress
