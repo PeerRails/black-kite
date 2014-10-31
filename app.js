@@ -5,7 +5,7 @@ var Datastore = require('nedb'),
   	path      = require('path'),
 		rq        = require('request'),
 		Twitter   = require('node-twitter'),
-		ILQuote		= require('./quote');
+		IHQuote		= require('./quote');
 
 dotenv.load();
 var db = new Datastore({ filename: process.env.IMG_DB || "data/store.db", autoload: true });
@@ -123,3 +123,9 @@ var timeStamp = function () {
 };
 
 //Add here your code
+var donmaise = new DBooru("http://danbooru.donmai.us/", "post/index.json?limit=1");
+
+//If you want to use it with ILQuote
+var quote = new IHQuote({max_characters: 115, source: "misc"}).random(function(res){
+	donmaise.run(res.quote);
+});
