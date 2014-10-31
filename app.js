@@ -23,7 +23,7 @@ DBooru.prototype.save = function (post, callback) {
 			db.insert(post, function(err, newDoc) {
 				if (err) {callback(err)};
 				if (newDoc) {
-					console.log("New Image Record was saved.");
+					console.log(timeStamp() + "New Image Record was saved.");
 					callback(null, newDoc);
 				};
 			});
@@ -103,13 +103,13 @@ DBooru.prototype.download = function (callback) {
 DBooru.prototype.run = function (message) {
 	var upload = this.upload;
 	this.download(function (error, path) {
-		if (error) {console.log(error)};
+		if (error) {console.log(timeStamp() + error)};
 		if (path) {
-			console.log('Success! File is downloaded at '+path);
+			console.log(timeStamp() + 'Success! File is downloaded at '+path);
 			upload(path, message, function (err, response) {
-				if (err) {console.log(err)};
+				if (err) {timeStamp() + console.log(err)};
 				if (path) {
-					console.log('File Uploaded!');
+					console.log(timeStamp() + 'File Uploaded!');
 					};
 			});
 		};
@@ -118,7 +118,7 @@ DBooru.prototype.run = function (message) {
 
 var timeStamp = function () {
 	date = new Date();
-	time = date.getHours()+':'+ date.getMinutes()+':'+date.getSeconds();
+	time = date.getHours()+':'+ date.getMinutes()+':'+date.getSeconds() + " ";
 	return time;
 };
 
