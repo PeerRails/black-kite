@@ -1,65 +1,118 @@
-var twitter = require('ntwitter'),
-	request = require('request'),
-	path = require('path'),
-	imgur = require('imgur-node-api'),
-	config = require('./config');
+var Datastore = require('nedb'),
+    dotenv    = require('dotenv'),
+    Download  = require('download'),
+		fs        = require('fs'),
+  	path      = require('path'),
+		rq        = require('request'),
+		Twitter   = require('node-twitter'),
+		ILQuote		= require('./quote');
 
-var twit = new twitter({
-  consumer_key: config.consumer_key,
-  consumer_secret: config.consumer_secret,
-  access_token_key: config.access_token_key,
-  access_token_secret: config.access_token_secret
-});
+dotenv.load();
+var db = new Datastore({ filename: process.env.IMG_DB || "data/store.db", autoload: true });
 
-imgur.setClientID(config.cid);
-
-var Danbooru = function (site_link) {
-	this.site_link = site_link;
-	this.api_link = '/posts.json';
+var DBooru = function (host, link, db, store) {
+	this.host  = host        || "https://yande.re/";
+	this.link  = host + link || "https://yande.re/post/index.json?limit=1";
+	this.store = store       || process.env.IMG_STORE;
 };
 
-var donmaius = new Danbooru('http://donmai.us');
-
-var parseDanbooru = function (booru) {
-	var site = booru.site_link+booru.api_link;
-	console.log(timeStamp()+' Uploading from '+booru.site_link);
-	var img_link;
-	request(site, function (error, response, body){
-		if (!error && response.statusCode == 200) {
-			data = JSON.parse(body);
-			img = data[0].file_url;
-			uploadFile(booru.site_link+img,booru.site_link);
-		} else if (error) {console.log(timeStamp()+' '+error)};
-		if (response.statusCode !== 200) {console.log(timeStamp()+' '+response.statusCode)}
+DBooru.prototype.save = function (post, callback) {
+  db.findOne({md5: post.md5}, function(err, doc){
+		if (err) {callback(err)};
+		if (!doc) {
+			db.insert(post, function(err, newDoc) {
+				if (err) {callback(err)};
+				if (newDoc) {
+					console.log("New Image Record was saved.");
+					callback(null, newDoc);
+				};
+			});
+		} else if (doc) {
+			callback(new Error('Image Record is already at DataBase'));
+		};
 	});
 };
 
-var konaChan = function () {
-	var site = 'http://konachan.com/post.json';
-	console.log(timeStamp()+' Upload from KonaChan.com');
-	var img_link;
-	request(site, function (error, response, body) {
-		if (!error && response.statusCode == 200) {
-			data = JSON.parse(body);
-			img = data[0].sample_url;
-			uploadFile(img, 'http://konachan.com');
-		} else if (error) {console.log(timeStamp()+' '+err)};
-		if (response.statusCode !== 200) {console.log(timeStamp()+' '+response)};
+DBooru.prototype.upload = function (file, message, callback) {
+	if (!file) {
+		callback(new Error("No file was attached!"));
+	}	else {
+		var tclient = new Twitter.RestClient(
+				process.env.CONSUMER_KEY,
+				process.env.CONSUMER_SECRET,
+				process.env.ACCESS_TOKEN_KEY,
+				process.env.ACCESS_TOKEN_SECRET
+		);
+	  tclient.statusesUpdateWithMedia(
+	    {
+	        'status': message || "",
+	        'media[]': file
+	    },
+	    function(error, result) {
+	      if (error){
+			    callback(new Error('Error: ' + (error.code ? error.code + ' ' + error.message : error.message)))
+	      };
+	      if (result) {
+	        callback(null, result);
+	      };
+	    });
+		};
+};
+
+DBooru.prototype.get = function (callback) {
+	rq(this.link, function(error, res, body){
+		if (error) {callback(error);};
+		if (!error && res.statusCode == 200) {
+			callback(null, JSON.parse(body));
+		};
 	});
 };
 
-var uploadFile = function (file_link, site_link) {
-	imgur.upload(file_link,function(err,res){
-		if (err) {console.log(timeStamp()+' '+err)};
-		if (res.status !== 200) {console.log(res)};
-    	if (!err && res.status == 200) {
-    		tweet_post = res.data.link + ' from '+ site_link;
-    		twit.updateStatus(tweet_post, function (error, data){
-    			if (error) {console.log(timeStamp()+' '+err)} else {
-    				console.log(timeStamp()+' '+'Upload file '+res.data.link+' from '+ site_link)
-    			}
-    		});
-    	};
+DBooru.prototype.download = function (callback) {
+	var store = this.store;
+	var save  = this.save;
+	var host  = this.host;
+	this.get(function (err, data){
+		if (err) {callback(err)};
+		if (data) {
+			data[0].host = host;
+			data[0].new_name = Date.now().valueOf().toString()+"."+data[0].file_url.split('.').pop();
+			data[0].new_path = store;
+      save(data[0], function (error, res) {
+      	if (error) {callback(error)};
+				if (res) {
+					if (!/^(f|ht)tps?:\/\//i.test(res.file_url)) {
+						res.file_url = host+res.file_url;
+					};
+					var file = new Download()
+							.get(res.file_url)
+							.dest(store)
+							.rename(Date.now().valueOf().toString()+"."+res.file_url.split('.').pop())
+							.run(function (error, files){
+								if (error) {callback(error)};
+								if (files) {
+									callback(null, files[0].path);
+								};
+							});
+				}
+      });
+		}
+	});
+};
+
+DBooru.prototype.run = function (message) {
+	var upload = this.upload;
+	this.download(function (error, path) {
+		if (error) {console.log(error)};
+		if (path) {
+			console.log('Success! File is downloaded at '+path);
+			upload(path, message, function (err, response) {
+				if (err) {console.log(err)};
+				if (path) {
+					console.log('File Uploaded!');
+					};
+			});
+		};
 	});
 };
 
@@ -69,11 +122,4 @@ var timeStamp = function () {
 	return time;
 };
 
-console.log(timeStamp()+' '+'Start upload in 33 minutes');
-
-//konaChan();
-parseDanbooru(donmaius);
-
-setInterval(function() {
-	konaChan();
-}, config.timelimit); 
+//Add here your code
